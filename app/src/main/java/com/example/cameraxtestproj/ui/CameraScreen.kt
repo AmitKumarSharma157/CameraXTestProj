@@ -74,13 +74,13 @@ fun CameraScreen(navController: NavController) {
                     .padding(20.dp)
                     .align(alignment = Alignment.End),
                 onClick = {
-                    isSendImageEnable = !isSendImageEnable
+                    isSendImageEnable = true
                 },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Blue
                 )
             ) {
-                Text(text = "Send Photo")
+                Text(text = "Read LFC")
             }
         }
 
@@ -88,8 +88,10 @@ fun CameraScreen(navController: NavController) {
             val cameraViewModel: CameraViewModel = hiltViewModel()
             cameraViewModel.processImage(image)
             if (cameraViewModel.status.value != "") {
-                AlertDialogExample(Icons.Default.Info, "Parse Text", cameraViewModel.status.value, openDialog.value) {
+                AlertDialogExample(Icons.Default.Info, "Label free code", cameraViewModel.status.value, openDialog.value) {
                     openDialog.value = false
+                    isSendImageEnable = false
+                    navController.popBackStack()
                 }
             }
         }

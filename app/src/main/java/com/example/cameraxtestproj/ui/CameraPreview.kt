@@ -103,7 +103,7 @@ fun CameraPreview(
                 val path = context.getExternalFilesDir(null)?.absolutePath
                 val tempFile = File(path, "tempFileName.jpg")
                 val fOut = FileOutputStream(tempFile)
-                it.compress(Bitmap.CompressFormat.JPEG, 30, fOut)
+                it.compress(Bitmap.CompressFormat.JPEG, 10, fOut)
                 fOut.close()
 
                 navController.navigate(Constants.CAMERA_SCREEN_NAV)
