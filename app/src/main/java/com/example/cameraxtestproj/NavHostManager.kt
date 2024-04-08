@@ -20,7 +20,7 @@ fun InitNavHost(
 {
     NavHost(navController = navController, startDestination = Constants.Camera_Preview_NAV){
         composable(Constants.Camera_Preview_NAV){
-            CameraPreview(navController)
+            //CameraPreview(navController)
         }
         composable(Constants.CAMERA_SCREEN_NAV){
             CameraScreen(navController)
