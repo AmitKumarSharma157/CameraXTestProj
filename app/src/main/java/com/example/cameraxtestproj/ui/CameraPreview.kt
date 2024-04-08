@@ -40,7 +40,6 @@ fun CameraPreview(
     capturedImage: (image: Bitmap, isOpen: Boolean) -> Unit
 ) {
     val context = LocalContext.current
-
     val controller = remember {
         LifecycleCameraController(context).apply {
             this.setEnabledUseCases(IMAGE_CAPTURE or IMAGE_ANALYSIS)
