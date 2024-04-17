@@ -1,18 +1,18 @@
+@file:Suppress("NAME_SHADOWING")
+
 package com.example.cameraxtestproj.ui
 
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Matrix
-import android.util.Size
-import androidx.camera.core.AspectRatio
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
-import androidx.camera.view.CameraController
-import androidx.camera.view.CameraController.IMAGE_ANALYSIS
-import androidx.camera.view.CameraController.IMAGE_CAPTURE
-import androidx.camera.view.LifecycleCameraController
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,7 +21,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -39,28 +42,55 @@ fun CameraPreview(
     modifier: Modifier = Modifier,
     capturedImage: (image: Bitmap, isOpen: Boolean) -> Unit
 ) {
-    val context = LocalContext.current
-    val controller = remember {
-        LifecycleCameraController(context).apply {
-            this.setEnabledUseCases(IMAGE_CAPTURE or IMAGE_ANALYSIS)
-        }
+    var code by remember {
+        mutableStateOf("")
     }
-
+    lateinit var imageCapture: ImageCapture
+    lateinit var imageAnalysis: ImageAnalysis
+    val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val cameraProviderFuture = remember {
+        ProcessCameraProvider.getInstance(context)
+    }
+    // Used to bind the lifecycle of cameras to the lifecycle owner
+    val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
     AndroidView(
-        modifier = modifier,
-        factory = { it ->
-            PreviewView(it).apply {
-                controller.cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-                controller.imageCaptureTargetSize =
-                    CameraController.OutputSize(AspectRatio.RATIO_4_3)
-                controller.imageCaptureTargetSize = CameraController.OutputSize(Size(200, 200))
-                controller.setZoomRatio(.1f)
-                this.controller = controller
-                controller.unbind()
-                controller.bindToLifecycle(lifecycleOwner)
+        factory = { context ->
+            val previewView = PreviewView(context)
+            val preview = Preview.Builder().build()
+            val cameraSelector = CameraSelector.Builder()
+                .requireLensFacing(CameraSelector.LENS_FACING_BACK)
+                .build()
+            preview.setSurfaceProvider(previewView.surfaceProvider)
+
+            imageCapture = ImageCapture.Builder()
+                .build()
+
+            imageAnalysis = ImageAnalysis.Builder()
+                .setBackpressureStrategy(STRATEGY_KEEP_ONLY_LATEST)
+                .build()
+            imageAnalysis.setAnalyzer(
+                ContextCompat.getMainExecutor(context),
+                QrCodeAnalyzer { result ->
+                    code = result
+                })
+            try {
+                cameraProvider.unbindAll()
+                cameraProvider.bindToLifecycle(
+                    lifecycleOwner,
+                    cameraSelector,
+                    preview,
+                    imageCapture,
+                    imageAnalysis
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-        }
+            previewView
+        },
+        modifier = modifier
+            .height(400.dp)
+            .fillMaxWidth()
     )
 
     Box(
@@ -68,14 +98,13 @@ fun CameraPreview(
         contentAlignment = Alignment.BottomCenter
     ) {
         IconButton(onClick = {
-            takePhoto(controller, context) {
+            takePhoto(imageCapture, context) {
                 val path = context.getExternalFilesDir(null)?.absolutePath
                 val tempFile = File(path, "tempFileName.jpg")
                 val fOut = FileOutputStream(tempFile)
                 it.compress(Bitmap.CompressFormat.JPEG, 15, fOut)
                 fOut.close()
-                capturedImage(it,true)
-                //navController.navigate(Constants.CAMERA_SCREEN_NAV)
+                capturedImage(it, true)
             }
         }) {
             Icon(
@@ -90,11 +119,11 @@ fun CameraPreview(
 }
 
 private fun takePhoto(
-    controller: LifecycleCameraController,
+    imageCapture: ImageCapture,
     context: Context,
     onPhotoTaken: (Bitmap) -> Unit
 ) {
-    controller.takePicture(
+    imageCapture.takePicture(
         ContextCompat.getMainExecutor(context),
         object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
