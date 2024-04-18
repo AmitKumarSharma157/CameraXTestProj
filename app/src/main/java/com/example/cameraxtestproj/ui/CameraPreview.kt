@@ -1,5 +1,6 @@
 package com.example.cameraxtestproj.ui
 
+import LFCAlertDialog
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Matrix
@@ -15,12 +16,16 @@ import androidx.camera.view.CameraController.IMAGE_CAPTURE
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,16 +35,43 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.navigation.NavController
 import com.example.cameraxtestproj.R
+import com.example.cameraxtestproj.Utils.Utils
+import com.example.cameraxtestproj.viewmodel.CameraViewModel
 import java.io.File
 import java.io.FileOutputStream
 
 @Composable
+fun CameraPreviewScreen(
+    cameraViewModel: CameraViewModel,
+    navController: NavController
+) {
+    val openDialog = remember {
+        mutableStateOf(true)
+    }
+    CameraPreview(
+        cameraViewModel,
+        openDialog.value
+    ) { image, unitId, printerName, userData, isOpen ->
+        openDialog.value = isOpen
+        if (unitId != null && printerName != null && userData != null) {
+            cameraViewModel.processImage(image, unitId, printerName, userData)
+        }
+    }
+}
+
+@Composable
 fun CameraPreview(
-    modifier: Modifier = Modifier,
-    capturedImage: (image: Bitmap, isOpen: Boolean) -> Unit
+    cameraViewModel: CameraViewModel,
+    isDialogOpen: Boolean,
+    capturedImage: (image: Bitmap, unitId: String?, printerName: String?, userData: String?, isOpen: Boolean) -> Unit
 ) {
     val context = LocalContext.current
+    val unitId: String? = Utils.getUnitIdToPreferences(context)
+    val printerName: String? = Utils.getPrinterNameToPreferences(context)
+    val userData: String? = Utils.getUserDataPreferences(context)
+    var isDialogOpen: Boolean = isDialogOpen
     val controller = remember {
         LifecycleCameraController(context).apply {
             this.setEnabledUseCases(IMAGE_CAPTURE or IMAGE_ANALYSIS)
@@ -48,7 +80,7 @@ fun CameraPreview(
 
     val lifecycleOwner = LocalLifecycleOwner.current
     AndroidView(
-        modifier = modifier,
+        modifier = Modifier.fillMaxSize(),
         factory = { it ->
             PreviewView(it).apply {
                 controller.cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
@@ -74,8 +106,7 @@ fun CameraPreview(
                 val fOut = FileOutputStream(tempFile)
                 it.compress(Bitmap.CompressFormat.JPEG, 15, fOut)
                 fOut.close()
-                capturedImage(it,true)
-                //navController.navigate(Constants.CAMERA_SCREEN_NAV)
+                capturedImage(it, unitId, printerName, userData, true)
             }
         }) {
             Icon(
@@ -85,6 +116,18 @@ fun CameraPreview(
                 painter = painterResource(id = R.drawable.camera),
                 contentDescription = "Take Photo"
             )
+        }
+    }
+
+    if (cameraViewModel.status.value != "") {
+        LFCAlertDialog(
+            Icons.Default.Info,
+            "Label free code",
+            cameraViewModel.status.value,
+            isDialogOpen
+        ) {
+            isDialogOpen = false
+            cameraViewModel.status.value = ""
         }
     }
 }

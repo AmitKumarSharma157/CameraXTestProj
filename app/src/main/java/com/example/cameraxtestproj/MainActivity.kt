@@ -1,25 +1,17 @@
 package com.example.cameraxtestproj
 
-import AlertDialogExample
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.cameraxtestproj.ui.CameraPreview
 import com.example.cameraxtestproj.ui.theme.CameraXTestProjTheme
-import com.example.cameraxtestproj.viewmodel.CameraViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -33,32 +25,13 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            val cameraViewModel: CameraViewModel = hiltViewModel()
-            val openDialog = remember {
-                mutableStateOf(true)
-            }
             CameraXTestProjTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    //InitNavHost()
-                    CameraPreview { image, isOpen ->
-                        cameraViewModel.processImage(image)
-                        openDialog.value = isOpen
-                    }
-                    if (cameraViewModel.status.value != "") {
-                        AlertDialogExample(
-                            Icons.Default.Info,
-                            "Label free code",
-                            cameraViewModel.status.value,
-                            openDialog.value
-                        ) {
-                            openDialog.value = false
-                            cameraViewModel.status.value = ""
-                        }
-                    }
+                    InitNavHost()
                 }
             }
         }

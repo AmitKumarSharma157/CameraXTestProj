@@ -3,10 +3,7 @@ import com.example.cameraxtestproj.model.ImageProcessingRequest
 import com.example.cameraxtestproj.model.ImageProcessingResult
 import retrofit2.Response
 import retrofit2.http.Body
-import retrofit2.http.GET
-import retrofit2.http.Header
 import retrofit2.http.POST
-import retrofit2.http.Query
 
 /**
  * Retrofit interface that have the http requests, each request method will return [Response]
@@ -20,7 +17,7 @@ interface RemoteService {
 //        @Query("CountryCode") countryCode: String
 //    ): Response<UserSortingProfile>
 
-    @POST("ImageProcessing")
+    @POST("ImageProcessing/ProcessImage")
     suspend fun sendImage(
         @Body request: ImageProcessingRequest
     ): Response<ImageProcessingResult>
