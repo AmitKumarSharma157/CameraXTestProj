@@ -29,8 +29,8 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.cameraxtestproj.Utils.Utils
 import com.example.cameraxtestproj.constants.Constants
+import com.example.cameraxtestproj.utils.Utils
 import com.example.cameraxtestproj.viewmodel.ScannerViewModel
 
 @Composable
@@ -43,18 +43,20 @@ fun MainScreenView(
 
     val context = LocalContext.current
     val unitId: String? = Utils.getUnitIdToPreferences(context)
-    var printerName: String? = ""
-    var userData: String? = ""
     if (unitId != null) {
         enablePrintLFC = true
-        printerName = Utils.getPrinterNameToPreferences(context)
-        userData = Utils.getUserDataPreferences(context)
     }
 
     MainScreen(
-        scannerViewModel, navController, enablePrintLFC, unitId, printerName, userData
+        scannerViewModel,
+        navController,
+        enablePrintLFC,
+        unitId
     ) {
-        enablePrintLFC = true
+        enablePrintLFC = it
+        if (enablePrintLFC) {
+            scannerViewModel.enableScanner()
+        }
     }
 }
 
@@ -64,8 +66,6 @@ fun MainScreen(
     navController: NavController,
     enablePrintLFC: Boolean,
     unitId: String?,
-    printerName: String?,
-    userData: String?,
     onUpdateProfile: (Boolean) -> Unit
 ) {
     val openDialog = remember {
@@ -74,8 +74,13 @@ fun MainScreen(
 
     val context = LocalContext.current
     var unitId: String? = unitId
-    var printerName: String? = printerName
-    var userData: String? = userData
+    var printerName: String? = ""
+    var userData: String? = ""
+    if (unitId != null) {
+        scannerViewModel.enableScanner()
+        printerName = Utils.getPrinterNameToPreferences(context)
+        userData = Utils.getUserDataPreferences(context)
+    }
 
     val lstQrData = scannerViewModel.scannedCode.value?.data?.split("##")
     if (lstQrData != null && lstQrData.count() > 2) {
@@ -150,6 +155,7 @@ fun MainScreen(
                 Text(text = "Update Profile")
             }
             Button(enabled = enablePrintLFC, onClick = {
+                scannerViewModel.disableScanner()
                 navController.navigate(Constants.CAMERA_PREVIEW_NAV)
             }) {
                 Text(text = "Print LFC")

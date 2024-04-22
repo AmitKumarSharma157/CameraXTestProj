@@ -1,6 +1,7 @@
 package com.postenbring.sortapp.services.remote
 
 import com.example.cameraxtestproj.model.ImageProcessingRequest
+import com.example.cameraxtestproj.remote.RemoteService
 import javax.inject.Inject
 
 /**

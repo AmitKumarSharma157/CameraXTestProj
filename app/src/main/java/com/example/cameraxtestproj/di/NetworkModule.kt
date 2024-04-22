@@ -1,5 +1,5 @@
 package com.postenbring.sortapp.di
-import com.postenbring.sortapp.services.remote.RemoteService
+import com.example.cameraxtestproj.remote.RemoteService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

@@ -1,4 +1,4 @@
-package com.example.cameraxtestproj.Utils
+package com.example.cameraxtestproj.utils
 
 /**
  * An extension function to unite the type of barcodes into a common type.

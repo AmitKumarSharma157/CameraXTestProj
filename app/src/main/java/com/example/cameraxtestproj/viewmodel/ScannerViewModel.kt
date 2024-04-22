@@ -16,10 +16,19 @@ class ScannerViewModel @Inject constructor(private val repository: ScannersRepos
 
     init {
         repository.initDataWedge()
+        disableScanner()
         viewModelScope.launch {
             repository.dataWedgeScannedCode().collect {
                 scannedCode.value = it
             }
         }
+    }
+
+    fun disableScanner(){
+        repository.blockButtonTrigger()
+    }
+
+    fun enableScanner(){
+        repository.unblockButtonTrigger()
     }
 }

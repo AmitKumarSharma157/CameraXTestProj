@@ -23,7 +23,7 @@ fun InitNavHost(
         }
         composable(Constants.CAMERA_PREVIEW_NAV) {
             val cameraViewModel: CameraViewModel = hiltViewModel()
-            CameraPreviewScreen(cameraViewModel, navController)
+            CameraPreviewScreen(cameraViewModel)
         }
     }
 }

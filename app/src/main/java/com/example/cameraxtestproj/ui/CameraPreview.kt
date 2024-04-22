@@ -1,62 +1,66 @@
 package com.example.cameraxtestproj.ui
 
-import LFCAlertDialog
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Matrix
-import android.util.Size
-import androidx.camera.core.AspectRatio
+import android.util.Log
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
-import androidx.camera.view.CameraController
 import androidx.camera.view.CameraController.IMAGE_ANALYSIS
 import androidx.camera.view.CameraController.IMAGE_CAPTURE
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import androidx.navigation.NavController
-import com.example.cameraxtestproj.R
-import com.example.cameraxtestproj.Utils.Utils
+import com.example.cameraxtestproj.utils.Utils
 import com.example.cameraxtestproj.viewmodel.CameraViewModel
-import java.io.File
-import java.io.FileOutputStream
+import java.io.ByteArrayOutputStream
 
 @Composable
 fun CameraPreviewScreen(
-    cameraViewModel: CameraViewModel,
-    navController: NavController
+    cameraViewModel: CameraViewModel
 ) {
-    val openDialog = remember {
+
+    var isPrintLFCEnable by remember {
         mutableStateOf(true)
     }
+
     CameraPreview(
         cameraViewModel,
-        openDialog.value
-    ) { image, unitId, printerName, userData, isOpen ->
-        openDialog.value = isOpen
+        isPrintLFCEnable
+    ) { imageByteArray, unitId, printerName, userData, isEnable ->
         if (unitId != null && printerName != null && userData != null) {
-            cameraViewModel.processImage(image, unitId, printerName, userData)
+            isPrintLFCEnable = isEnable
+            cameraViewModel.processImage(imageByteArray, unitId, printerName, userData)
+            if (cameraViewModel.status.value != null) {
+                isPrintLFCEnable = true
+            }
         }
     }
 }
@@ -64,14 +68,13 @@ fun CameraPreviewScreen(
 @Composable
 fun CameraPreview(
     cameraViewModel: CameraViewModel,
-    isDialogOpen: Boolean,
-    capturedImage: (image: Bitmap, unitId: String?, printerName: String?, userData: String?, isOpen: Boolean) -> Unit
+    isPrintLFCEnable: Boolean,
+    capturedImage: (imageByteArray: ByteArray, unitId: String?, printerName: String?, userData: String?, isPrintLFCEnable: Boolean) -> Unit
 ) {
     val context = LocalContext.current
     val unitId: String? = Utils.getUnitIdToPreferences(context)
     val printerName: String? = Utils.getPrinterNameToPreferences(context)
     val userData: String? = Utils.getUserDataPreferences(context)
-    var isDialogOpen: Boolean = isDialogOpen
     val controller = remember {
         LifecycleCameraController(context).apply {
             this.setEnabledUseCases(IMAGE_CAPTURE or IMAGE_ANALYSIS)
@@ -79,55 +82,61 @@ fun CameraPreview(
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current
-    AndroidView(
-        modifier = Modifier.fillMaxSize(),
-        factory = { it ->
-            PreviewView(it).apply {
-                controller.cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-                controller.imageCaptureTargetSize =
-                    CameraController.OutputSize(AspectRatio.RATIO_4_3)
-                controller.imageCaptureTargetSize = CameraController.OutputSize(Size(200, 200))
-                controller.setZoomRatio(.1f)
-                this.controller = controller
-                controller.unbind()
-                controller.bindToLifecycle(lifecycleOwner)
-            }
-        }
-    )
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(.6f)
+        ) {
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { it ->
+                    PreviewView(it).apply {
+                        val cameraSelector = CameraSelector.Builder()
+                            .requireLensFacing(CameraSelector.LENS_FACING_BACK).build()
+                        controller.cameraSelector = cameraSelector
 
-    Box(
-        modifier = Modifier.fillMaxWidth(),
-        contentAlignment = Alignment.BottomCenter
-    ) {
-        IconButton(onClick = {
-            takePhoto(controller, context) {
-                val path = context.getExternalFilesDir(null)?.absolutePath
-                val tempFile = File(path, "tempFileName.jpg")
-                val fOut = FileOutputStream(tempFile)
-                it.compress(Bitmap.CompressFormat.JPEG, 15, fOut)
-                fOut.close()
-                capturedImage(it, unitId, printerName, userData, true)
-            }
-        }) {
-            Icon(
-                modifier = Modifier
-                    .width(45.dp)
-                    .height(45.dp),
-                painter = painterResource(id = R.drawable.camera),
-                contentDescription = "Take Photo"
+                        this.controller = controller
+                        controller.unbind()
+                        controller.bindToLifecycle(lifecycleOwner)
+                    }
+                }
             )
         }
-    }
-
-    if (cameraViewModel.status.value != "") {
-        LFCAlertDialog(
-            Icons.Default.Info,
-            "Label free code",
-            cameraViewModel.status.value,
-            isDialogOpen
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(.4f)
+                .padding(20.dp, 80.dp,20.dp,20.dp)
         ) {
-            isDialogOpen = false
-            cameraViewModel.status.value = ""
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Button(enabled = isPrintLFCEnable, onClick = {
+                    takePhoto(controller, context) {
+                        val byteArrayOutputStream = ByteArrayOutputStream()
+                        val isCompressed =
+                            it.compress(Bitmap.CompressFormat.JPEG, 15, byteArrayOutputStream)
+                        val imageByteArray = byteArrayOutputStream.toByteArray()
+                        Log.i("TakePhoto", "Success: $isCompressed")
+                        capturedImage(imageByteArray, unitId, printerName, userData, false)
+                    }
+                }) {
+                    Text(text = "Print LFC", textAlign = TextAlign.Center)
+                }
+            }
+            Text(modifier = Modifier
+                .fillMaxWidth()
+                .padding(0.dp, 10.dp, 0.dp, 0.dp), text = buildAnnotatedString {
+                withStyle(style = SpanStyle(color = Color.Black, fontSize = 20.sp)) {
+                    append("LFC: ")
+                }
+                withStyle(style = SpanStyle(color = Color.Black, fontSize = 18.sp)) {
+                    append(cameraViewModel.status.value)
+                }
+            })
         }
     }
 }
@@ -161,6 +170,7 @@ private fun takePhoto(
 
             override fun onError(exception: ImageCaptureException) {
                 super.onError(exception)
+                Log.e("TakePhoto", "Error: ${exception.message.toString()}")
             }
         }
     )

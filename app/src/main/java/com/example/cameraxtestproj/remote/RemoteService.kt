@@ -1,4 +1,4 @@
-package com.postenbring.sortapp.services.remote
+package com.example.cameraxtestproj.remote
 import com.example.cameraxtestproj.model.ImageProcessingRequest
 import com.example.cameraxtestproj.model.ImageProcessingResult
 import retrofit2.Response

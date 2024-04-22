@@ -1,4 +1,4 @@
-package com.example.cameraxtestproj.Utils
+package com.example.cameraxtestproj.utils
 
 enum class CommonBarcodeType {
     Code128,

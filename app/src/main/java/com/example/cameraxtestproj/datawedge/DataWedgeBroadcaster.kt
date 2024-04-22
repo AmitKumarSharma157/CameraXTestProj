@@ -4,10 +4,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import com.example.cameraxtestproj.Utils.CommonBarcodeType
-import com.example.cameraxtestproj.Utils.getCommonBarcodeType
 import com.example.cameraxtestproj.constants.ApiConstants
 import com.example.cameraxtestproj.model.ScannedCode
+import com.example.cameraxtestproj.utils.CommonBarcodeType
+import com.example.cameraxtestproj.utils.getCommonBarcodeType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
